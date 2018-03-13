@@ -23,4 +23,4 @@ make install
 
 # Install python module
 echo "Installing python module"
-pip install .
+pip install . --upgrade
