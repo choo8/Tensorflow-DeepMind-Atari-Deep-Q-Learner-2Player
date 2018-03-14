@@ -61,7 +61,9 @@ screen.fill((0,0,0))
 
 while not ale.ale_isGameOver():
 	# Both agents perform random actions
-	ale.ale_act2(np.random.randint(0,18),np.random.randint(20,38))
+	# Agent A : [NOOP, FIRE, RIGHT, LEFT]
+	# Agent B : [NOOP, FIRE, RIGHT, LEFT] 
+	ale.ale_act2(np.random.choice([0,1,3,4]),np.random.choice([20,21,23,24]))
 
 	# Fill buffer of game screen with current frame
 	numpy_surface = np.frombuffer(game_surface.get_buffer(), dtype=np.uint8)
