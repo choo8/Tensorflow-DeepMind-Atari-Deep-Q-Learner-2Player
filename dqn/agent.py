@@ -32,7 +32,7 @@ class Agent:
         self.minibatch_size = args.minibatch_size or 1
         self.valid_size = args.valid_size or 500
 
-        self.discount       = args.discount or 0.99 
+        self.discount       = args.discount or 0.99
         self.update_freq    = args.update_freq or 1
         # Number of points to replay per learning step
         self.n_replay       = args.n_replay or 1
@@ -65,7 +65,7 @@ class Agent:
         create_network()
 
 
-    def percieve(self, screen, reward, action, terminal):
+    def perceive(self, screen, reward, action, terminal):
         reward = max(self.min_reward, min(self.max_reward, reward))
 
         self.history.add(screen)
@@ -104,5 +104,3 @@ class Agent:
         self.total_loss += loss
         self.total_q += q_t.mean()
         self.update_count += 1
-
-    
