@@ -13,7 +13,7 @@ from .replay_memory import ReplayMemory
 from .ops import linear, conv2d, clipped_error
 from .utils import get_time, save_pkl, load_pkl
 
-class Agent(BaseModel):
+class Agent2(BaseModel):
   def __init__(self, config, environment, sess):
     super(Agent, self).__init__(config)
     self.sess = sess
@@ -23,7 +23,7 @@ class Agent(BaseModel):
     self.history = History(self.config)
     self.memory = ReplayMemory(self.config, self.model_dir)
 
-    with tf.variable_scope('step'):
+    with tf.variable_scope('step2'):
       self.step_op = tf.Variable(0, trainable=False, name='step')
       self.step_input = tf.placeholder('int32', None, name='step_input')
       self.step_assign_op = self.step_op.assign(self.step_input)
@@ -120,7 +120,7 @@ class Agent(BaseModel):
           * (self.ep_end_t - max(0., self.step - self.learn_start)) / self.ep_end_t))
 
     if random.random() < ep:
-      action = np.random.choice([0, 1, 3, 4])
+      action = random.randrange(self.env.action_size)
     else:
       action = self.q_action.eval({self.s_t: [s_t]})[0]
 
@@ -183,7 +183,7 @@ class Agent(BaseModel):
     activation_fn = tf.nn.relu
 
     # training network
-    with tf.variable_scope('prediction'):
+    with tf.variable_scope('prediction2'):
       if self.cnn_format == 'NHWC':
         self.s_t = tf.placeholder('float32',
             [None, self.screen_height, self.screen_width, self.history_length], name='s_t')
@@ -230,7 +230,7 @@ class Agent(BaseModel):
       self.q_summary = tf.summary.merge(q_summary, 'q_summary')
 
     # target network
-    with tf.variable_scope('target'):
+    with tf.variable_scope('target2'):
       if self.cnn_format == 'NHWC':
         self.target_s_t = tf.placeholder('float32', 
             [None, self.screen_height, self.screen_width, self.history_length], name='target_s_t')
@@ -273,7 +273,7 @@ class Agent(BaseModel):
       self.target_q_idx = tf.placeholder('int32', [None, None], 'outputs_idx')
       self.target_q_with_idx = tf.gather_nd(self.target_q, self.target_q_idx)
 
-    with tf.variable_scope('pred_to_target'):
+    with tf.variable_scope('pred_to_target2'):
       self.t_w_input = {}
       self.t_w_assign_op = {}
 
@@ -282,7 +282,7 @@ class Agent(BaseModel):
         self.t_w_assign_op[name] = self.t_w[name].assign(self.t_w_input[name])
 
     # optimizer
-    with tf.variable_scope('optimizer'):
+    with tf.variable_scope('optimizer2'):
       self.target_q_t = tf.placeholder('float32', [None], name='target_q_t')
       self.action = tf.placeholder('int64', [None], name='action')
 
@@ -305,7 +305,7 @@ class Agent(BaseModel):
       self.optim = tf.train.RMSPropOptimizer(
           self.learning_rate_op, momentum=0.95, epsilon=0.01).minimize(self.loss)
 
-    with tf.variable_scope('summary'):
+    with tf.variable_scope('summary2'):
       scalar_summary_tags = ['average.reward', 'average.loss', 'average.q', \
           'episode.max reward', 'episode.min reward', 'episode.avg reward', 'episode.num of game', 'training.learning_rate']
 

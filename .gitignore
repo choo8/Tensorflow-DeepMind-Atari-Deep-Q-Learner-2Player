@@ -1,0 +1,4 @@
+checkpoints/
+__pycache__/
+logs/
+dqg/__pychache__/

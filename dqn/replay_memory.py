@@ -95,4 +95,4 @@ class ReplayMemory:
     for idx, (name, array) in enumerate(
         zip(['actions', 'rewards', 'screens', 'terminals', 'prestates', 'poststates'],
             [self.actions, self.rewards, self.screens, self.terminals, self.prestates, self.poststates])):
-array = load_npy(os.path.join(self.model_dir, name))
+      array = load_npy(os.path.join(self.model_dir, name))
