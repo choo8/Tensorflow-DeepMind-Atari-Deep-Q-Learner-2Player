@@ -21,7 +21,7 @@ class AgentConfig(object):
 
   history_length = 4
   train_frequency = 4
-  learn_start = 0.5 * scale
+  learn_start = 0.2 * scale
 
   min_delta = -1
   max_delta = 1

@@ -133,11 +133,12 @@ def main(_):
         agent2.history.add(screen)
 
       for agent.step in tqdm(range(start_step, agent.max_step), ncols=70, initial=start_step):
+        agent2.step = agent.step
         if agent.step == agent.learn_start:
           num_game, agent.update_count, ep_reward = 0, 0, 0.
           total_reward, agent.total_loss, agent.total_q = 0., 0., 0.
           ep_rewards, actions = [], []
-
+          agent2.update_count, agent2.total_loss, agent2.total_q = 0, 0., 0.
         # 1. predict
         action1 = agent.predict(agent.history.get())
         action2 = agent2.predict(agent2.history.get())
@@ -157,15 +158,15 @@ def main(_):
         pooled_screen = game_screen.grab()
         scaled_pooled_screen = scale_image(pooled_screen)
         agent.observe(scaled_pooled_screen, reward1, action1, terminal)
-        agent.observe(scaled_pooled_screen, reward2, action2, terminal)
+        agent2.observe(scaled_pooled_screen, reward2, action2, terminal)
 
 
 
         # Print frame onto display screen
-        # screen_ale.blit(pygame.transform.scale2x(game_surface), (0, 0))
+        screen_ale.blit(pygame.transform.scale2x(game_surface), (0, 0))
 
         # Update the display screen
-        # pygame.display.flip()
+        pygame.display.flip()
 
         if terminal:
           ale.ale_resetGame()

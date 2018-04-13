@@ -15,7 +15,7 @@ from .utils import get_time, save_pkl, load_pkl
 
 class Agent2(BaseModel):
   def __init__(self, config, environment, sess):
-    super(Agent, self).__init__(config)
+    super(Agent2, self).__init__(config)
     self.sess = sess
     self.weight_dir = 'weights'
 
@@ -87,6 +87,7 @@ class Agent2(BaseModel):
 
           if max_avg_ep_reward * 0.9 <= avg_ep_reward:
             self.step_assign_op.eval({self.step_input: self.step + 1})
+          
             self.save_model(self.step + 1)
 
             max_avg_ep_reward = max(max_avg_ep_reward, avg_ep_reward)
@@ -120,9 +121,12 @@ class Agent2(BaseModel):
           * (self.ep_end_t - max(0., self.step - self.learn_start)) / self.ep_end_t))
 
     if random.random() < ep:
-      action = random.randrange(self.env.action_size)
+      action = np.random.choice([20, 21, 23, 24])
     else:
       action = self.q_action.eval({self.s_t: [s_t]})[0]
+    
+    if action != 20 and action != 21 and  action != 23 and action != 24:
+      return 20
 
     return action
 
