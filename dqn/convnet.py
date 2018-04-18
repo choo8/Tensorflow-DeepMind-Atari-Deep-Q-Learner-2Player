@@ -83,4 +83,4 @@ def create_network(x):
 			z5 = tf.nn.bias_add(tf.matmul(out4, w5), b5, name='z5')
 
 
-	return q
+	return z5

@@ -14,7 +14,10 @@ from .ops import linear, conv2d, clipped_error
 from .utils import get_time, save_pkl, load_pkl
 
 class Agent2(BaseModel):
-  def __init__(self, config, environment, sess):
+  def __init__(self, config, environment, sess, identity):
+    # Decides which agent this is
+    self.identity = identity
+
     super(Agent2, self).__init__(config)
     self.sess = sess
     self.weight_dir = 'weights'

@@ -4,6 +4,7 @@ import tensorflow as tf
 import time
 from tqdm import tqdm
 import numpy as np
+import os
 
 from dqn.agent import Agent
 from dqn.agent2 import Agent2
@@ -112,32 +113,36 @@ def main(_):
     # Clear screen
     screen_ale.fill((0, 0, 0))
 
-    agent = Agent(config, env, sess)
-    agent2 = Agent2(config, env, sess)
-
-
+    agent = Agent(config, env, sess, 'A')
+    agent2 = Agent2(config, env, sess, 'B')
 
     if FLAGS.is_train:
       start_step = agent.step_op.eval()
       start_time = time.time()
 
-      num_game, agent.update_count, ep_reward = 0, 0, 0.
-      total_reward, agent.total_loss, agent.total_q = 0., 0., 0.
+      num_game, agent.update_count, ep_rewardA, ep_rewardB = 0, 0, 0., 0.
+      total_rewardA, total_rewardB, agent.total_loss, agent.total_q = 0., 0., 0., 0.
       max_avg_ep_reward = 0
-      ep_rewards, actions = [], []
+      ep_rewardsA, ep_rewardsB, actionsA, actionsB = [], [], [], []
 
-      screen, reward, action, terminal = agent.env.new_random_game()
+      numpy_surface = np.frombuffer(game_surface.get_buffer(), dtype=np.uint8)
+      rgb = getRgbFromPalette(ale, game_surface, numpy_surface)
+      del numpy_surface        
+      game_screen.paint(rgb)
+      pooled_screen = game_screen.grab()
+      scaled_pooled_screen = scale_image(pooled_screen)
 
       for _ in range(agent.history_length):
-        agent.history.add(screen)
-        agent2.history.add(screen)
+        agent.history.add(scaled_pooled_screen)
+        agent2.history.add(scaled_pooled_screen)
 
       for agent.step in tqdm(range(start_step, agent.max_step), ncols=70, initial=start_step):
         agent2.step = agent.step
         if agent.step == agent.learn_start:
-          num_game, agent.update_count, ep_reward = 0, 0, 0.
-          total_reward, agent.total_loss, agent.total_q = 0., 0., 0.
-          ep_rewards, actions = [], []
+          num_game, agent.update_count, ep_rewardA, ep_rewardB = 0, 0, 0., 0.
+          total_rewardA, total_rewardB, agent.total_loss, agent.total_q = 0., 0., 0., 0.
+          max_avg_ep_reward = 0
+          ep_rewardsA, ep_rewardsB, actionsA, actionsB = [], [], [], []
           agent2.update_count, agent2.total_loss, agent2.total_q = 0, 0., 0.
         # 1. predict
         action1 = agent.predict(agent.history.get())
@@ -146,8 +151,8 @@ def main(_):
         # 2. act
         ale.ale_act2(action1, action2)
         terminal = ale.ale_isGameOver()
-        reward1 = ale.ale_getRewardA()
-        reward2 = ale.ale_getRewardB()
+        rewardA = ale.ale_getRewardA()
+        rewardB = ale.ale_getRewardB()
         # Fill buffer of game screen with current frame
         numpy_surface = np.frombuffer(game_surface.get_buffer(), dtype=np.uint8)
 
@@ -157,8 +162,8 @@ def main(_):
         game_screen.paint(rgb)
         pooled_screen = game_screen.grab()
         scaled_pooled_screen = scale_image(pooled_screen)
-        agent.observe(scaled_pooled_screen, reward1, action1, terminal)
-        agent2.observe(scaled_pooled_screen, reward2, action2, terminal)
+        agent.observe(scaled_pooled_screen, rewardA, action1, terminal)
+        agent2.observe(scaled_pooled_screen, rewardB, action2, terminal)
 
 
 
@@ -171,7 +176,8 @@ def main(_):
         if terminal:
           ale.ale_resetGame()
           terminal = ale.ale_isGameOver()
-          reward = ale.ale_getRewardA()
+          rewardA = ale.ale_getRewardA()
+          rewardB = ale.ale_getRewardB()
           numpy_surface = np.frombuffer(game_surface.get_buffer(), dtype=np.uint8)
 
           rgb = getRgbFromPalette(ale, game_surface, numpy_surface)
@@ -181,24 +187,30 @@ def main(_):
           scaled_pooled_screen = scale_image(pooled_screen)
 
           num_game += 1
-          ep_rewards.append(ep_reward)
-          ep_reward = 0.
+          ep_rewardsA.append(ep_rewardA)
+          ep_rewardsB.append(ep_rewardB)
+          ep_rewardA = 0.
+          ep_rewardB = 0.
         else:
-          ep_reward += reward
+          ep_rewardA += rewardA
+          ep_rewardB += rewardB
 
-        actions.append(action)
-        total_reward += reward
+        actionsA.append(action1)
+        actionsB.append(action2)
+        total_rewardA += rewardA
+        total_rewardB += rewardB
 
+        # Do a test to get statistics so far
         if agent.step >= agent.learn_start:
-          if agent.step % agent.test_step == agent.test_step - 1:
-            avg_reward = total_reward / agent.test_step
+          if agent.step % 3000 == 3000 - 1:
+            avg_reward = total_rewardA / agent.test_step
             avg_loss = agent.total_loss / agent.update_count
             avg_q = agent.total_q / agent.update_count
 
             try:
-              max_ep_reward = np.max(ep_rewards)
-              min_ep_reward = np.min(ep_rewards)
-              avg_ep_reward = np.mean(ep_rewards)
+              max_ep_reward = np.max(ep_rewardsA)
+              min_ep_reward = np.min(ep_rewardsA)
+              avg_ep_reward = np.mean(ep_rewardsA)
             except:
               max_ep_reward, min_ep_reward, avg_ep_reward = 0, 0, 0
 
@@ -208,6 +220,9 @@ def main(_):
             if max_avg_ep_reward * 0.9 <= avg_ep_reward:
               agent.step_assign_op.eval({agent.step_input: agent.step + 1})
               agent.save_model(agent.step + 1)
+
+              agent2.step_assign_op.eval({agent2.step_input: agent2.step + 1})
+              agent2.save_model(agent2.step + 1)
 
               max_avg_ep_reward = max(max_avg_ep_reward, avg_ep_reward)
 
@@ -220,8 +235,8 @@ def main(_):
                   'episode.min reward': min_ep_reward,
                   'episode.avg reward': avg_ep_reward,
                   'episode.num of game': num_game,
-                  'episode.rewards': ep_rewards,
-                  'episode.actions': actions,
+                  'episode.rewards': ep_rewardsA,
+                  'episode.actions': actionsA,
                   'training.learning_rate': agent.learning_rate_op.eval({agent.learning_rate_step: agent.step}),
                 }, agent.step)
 
@@ -231,10 +246,11 @@ def main(_):
             agent.total_q = 0.
             agent.update_count = 0
             ep_reward = 0.
-            ep_rewards = []
-            actions = []
+            ep_rewardsA, ep_rewardsB = [], []
+            actionsA, actionsB = [], []
     else:
       agent.play()
+      agent2.play()
 
 if __name__ == '__main__':
   tf.app.run()

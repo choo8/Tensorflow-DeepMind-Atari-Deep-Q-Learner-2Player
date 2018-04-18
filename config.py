@@ -3,7 +3,7 @@ class AgentConfig(object):
   display = False
 
   max_step = 80 * scale
-  memory_size = 100 * scale
+  memory_size = 10 * scale
 
   batch_size = 32
   random_start = 30
@@ -33,7 +33,7 @@ class AgentConfig(object):
   _save_step = _test_step * 10
 
 class EnvironmentConfig(object):
-  env_name = 'Breakout-v0'
+  env_name = 'Pong2PlayerVS'
 
   screen_width  = 84
   screen_height = 84
