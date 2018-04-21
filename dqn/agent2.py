@@ -331,7 +331,13 @@ class Agent2(BaseModel):
 
       self.writer = tf.summary.FileWriter('./logs/%s' % self.model_dir, self.sess.graph)
 
-    tf.initialize_all_variables().run()
+    # Initialize only uninitialized variables
+    global_vars = tf.global_variables()
+    is_not_initialized = self.sess.run([tf.is_variable_initialized(var) for var in global_vars])
+    not_initialized_vars = [v for (v, f) in zip(global_vars, is_not_initialized) if not f]
+    if len(not_initialized_vars):
+        self.sess.run(tf.variables_initializer(not_initialized_vars))
+    #tf.global_variables_initializer().run()
 
     self._saver = tf.train.Saver(list(self.w.values()) + [self.step_op], max_to_keep=30)
 
