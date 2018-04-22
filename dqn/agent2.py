@@ -31,6 +31,11 @@ class Agent2(BaseModel):
       self.step_input = tf.placeholder('int32', None, name='step_input')
       self.step_assign_op = self.step_op.assign(self.step_input)
 
+    with tf.variable_scope('epoch2'):
+      self.epoch_op = tf.Variable(0, trainable=False, name='epoch')
+      self.epoch_input = tf.placeholder('int32', None, name='epoch_input')
+      self.epoch_assign_op = self.epoch_op.assign(self.epoch_input)
+
     self.build_dqn()
 
   def train(self):
@@ -339,7 +344,7 @@ class Agent2(BaseModel):
         self.sess.run(tf.variables_initializer(not_initialized_vars))
     #tf.global_variables_initializer().run()
 
-    self._saver = tf.train.Saver(list(self.w.values()) + [self.step_op], max_to_keep=30)
+    self._saver = tf.train.Saver(list(self.w.values()) + [self.step_op] + [self.epoch_op], max_to_keep=30)
 
     self.load_model()
     self.update_target_q_network()

@@ -2,6 +2,7 @@ class AgentConfig(object):
   scale = 10000
   display = False
 
+  max_epoch = 50
   max_step = 80 * scale
   memory_size = 10 * scale
 
