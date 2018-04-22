@@ -18,6 +18,8 @@ import sys
 from dqn.game_screen import GameScreen
 from dqn.scale import scale_image
 
+from dqn.history import History
+
 flags = tf.app.flags
 
 # Model
@@ -94,7 +96,7 @@ def main(_):
     if not FLAGS.use_gpu:
       config.cnn_format = 'NHWC'
 
-    roms = 'roms/Pong2Player025.bin'
+    roms = 'roms/Pong2PlayerVS.bin'
     ale = ALEInterface(roms.encode('utf-8'))
     width = ale.ale_getScreenWidth()
     height = ale.ale_getScreenHeight()
@@ -162,6 +164,9 @@ def main(_):
           # 2. act
           ale.ale_act2(action1, action2)
           terminal = ale.ale_isGameOver()
+          # End of end epoch, finish up training so that game statistics can be collected without training data being messed up
+          if agent.step == agent.max_step - 1:
+            terminal = True
           rewardA = ale.ale_getRewardA()
           rewardB = ale.ale_getRewardB()
           
@@ -284,6 +289,88 @@ def main(_):
               ep_rewardA, ep_rewardB = 0., 0.
               ep_rewardsA, ep_rewardsB = [], []
               actionsA, actionsB = [], []
+
+        # Play 10 games at the end of epoch to get game statistics
+        total_points, paddle_bounce, wall_bounce, serving_time = [], [], [], []
+        for _ in range(2):
+          cur_total_points, cur_paddle_bounce, cur_wall_bounce, cur_serving_time = 0, 0, 0, 0
+
+          # Restart game
+          ale.ale_resetGame()
+
+          # Get first frame of gameplay
+          numpy_surface = np.frombuffer(game_surface.get_buffer(), dtype=np.uint8)
+          rgb = getRgbFromPalette(ale, game_surface, numpy_surface)
+          del numpy_surface        
+          game_screen.paint(rgb)
+          pooled_screen = game_screen.grab()
+          scaled_pooled_screen = scale_image(pooled_screen)
+
+          # Create history for testing purposes
+          test_history = History(config)
+
+          # Fill first 4 images with initial screen
+          for _ in range(agent.history_length):
+            test_history.add(scaled_pooled_screen)
+
+          while not ale.ale_isGameOver():
+            # 1. predict
+            action1 = agent.predict(agent.history.get())
+            action2 = agent2.predict(agent2.history.get())
+
+            # 2. act
+            ale.ale_act2(action1, action2)
+            terminal = ale.ale_isGameOver()
+            rewardA = ale.ale_getRewardA()
+            rewardB = ale.ale_getRewardB()
+
+            # Record game statistics of current episode
+            cur_total_points = ale.ale_getPoints()
+            cur_paddle_bounce = ale.ale_getSideBouncing()
+            if ale.ale_getWallBouncing():
+              cur_wall_bounce += 1
+            if ale.ale_getServing():
+              cur_serving_time += 1
+
+            # Fill buffer of game screen with current frame
+            numpy_surface = np.frombuffer(game_surface.get_buffer(), dtype=np.uint8)
+            rgb = getRgbFromPalette(ale, game_surface, numpy_surface)
+            del numpy_surface        
+            game_screen.paint(rgb)
+            pooled_screen = game_screen.grab()
+            scaled_pooled_screen = scale_image(pooled_screen)
+            agent.observe(scaled_pooled_screen, rewardA, action1, terminal)
+            agent2.observe(scaled_pooled_screen, rewardB, action2, terminal)
+
+            # Print frame onto display screen
+            screen_ale.blit(pygame.transform.scale2x(game_surface), (0, 0))
+
+            # Update the display screen
+            pygame.display.flip()
+
+          # Append current episode's statistics into list
+          total_points.append(cur_total_points)
+          paddle_bounce.append(cur_paddle_bounce / cur_total_points)
+          if cur_paddle_bounce == 0:
+            wall_bounce.append(cur_wall_bounce / (cur_paddle_bounce + 1))
+          else:
+            wall_bounce.append(cur_wall_bounce / cur_paddle_bounce)
+          serving_time.append(cur_serving_time / cur_total_points)
+
+        # Save results of test after current epoch
+        cur_paddle_op = agent.paddle_op.eval()
+        cur_paddle_op[agent.epoch] = sum(paddle_bounce) / len(paddle_bounce)
+        agent.paddle_assign_op.eval({agent.paddle_input: cur_paddle_op})
+
+        cur_wall_op = agent.wall_op.eval()
+        cur_wall_op[agent.epoch] = sum(wall_bounce) / len(wall_bounce)
+        agent.wall_assign_op.eval({agent.wall_input: cur_wall_op})
+
+        cur_serving_op = agent.serving_op.eval()
+        cur_serving_op[agent.epoch] = sum(serving_time) / len(serving_time)
+        agent.serving_assign_op.eval({agent.serving_input: cur_serving_op})
+
+        agent.save_model(agent.step + 1)
     else:
       agent.play()
       agent2.play()

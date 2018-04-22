@@ -37,6 +37,22 @@ class Agent(BaseModel):
       self.epoch_input = tf.placeholder('int32', None, name='epoch_input')
       self.epoch_assign_op = self.epoch_op.assign(self.epoch_input)
 
+    # Game statistics to be recorded
+    with tf.variable_scope('paddle_bounce'):
+      self.paddle_op = tf.Variable(tf.zeros([self.max_epoch]), trainable=False, name='paddle')
+      self.paddle_input = tf.placeholder(tf.float32, [self.max_epoch], name='paddle_input')
+      self.paddle_assign_op = self.paddle_op.assign(self.paddle_input)
+
+    with tf.variable_scope('wall_bounce'):
+      self.wall_op = tf.Variable(tf.zeros([self.max_epoch]), trainable=False, name='wall')
+      self.wall_input = tf.placeholder(tf.float32, [self.max_epoch], name='wall_input')
+      self.wall_assign_op = self.wall_op.assign(self.wall_input)
+
+    with tf.variable_scope('serving_time'):
+      self.serving_op = tf.Variable(tf.zeros([self.max_epoch]), trainable=False, name='serving')
+      self.serving_input = tf.placeholder(tf.float32, [self.max_epoch], name='serving_input')
+      self.serving_assign_op = self.serving_op.assign(self.serving_input)
+
     self.build_dqn()
 
   def train(self):
@@ -341,7 +357,7 @@ class Agent(BaseModel):
         self.sess.run(tf.variables_initializer(not_initialized_vars))
     #tf.global_variables_initializer().run()
 
-    self._saver = tf.train.Saver(list(self.w.values()) + [self.step_op] + [self.epoch_op], max_to_keep=30)
+    self._saver = tf.train.Saver(list(self.w.values()) + [self.step_op, self.epoch_op, self.paddle_op, self.wall_op, self.serving_op], max_to_keep=30)
 
     self.load_model()
     self.update_target_q_network()

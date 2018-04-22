@@ -4,7 +4,7 @@ class AgentConfig(object):
 
   max_epoch = 50
   max_step = 80 * scale
-  memory_size = 10 * scale
+  memory_size = 100 * scale
 
   batch_size = 32
   random_start = 30
