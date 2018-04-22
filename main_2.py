@@ -217,7 +217,7 @@ def main(_):
 
           # Do a test to get statistics so far
           if agent.step >= agent.learn_start:
-            if agent.step % 3000 == 3000 - 1:
+            if agent.step % agent.test_step == agent.test_step - 1:
               avg_rewardA = total_rewardA / agent.test_step
               avg_rewardB = total_rewardB / agent2.test_step
               avg_lossA = agent.total_loss / agent.update_count
@@ -292,7 +292,7 @@ def main(_):
 
         # Play 10 games at the end of epoch to get game statistics
         total_points, paddle_bounce, wall_bounce, serving_time = [], [], [], []
-        for _ in range(2):
+        for _ in range(10):
           cur_total_points, cur_paddle_bounce, cur_wall_bounce, cur_serving_time = 0, 0, 0, 0
 
           # Restart game
