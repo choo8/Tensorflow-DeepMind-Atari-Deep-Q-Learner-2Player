@@ -33,9 +33,9 @@ def getRgbFromPalette(ale, surface, rgb_new):
         cur_color = pygame.Color(int(rgb[i]), int(rgb[i + n_obs]), int(rgb[i + 2 * n_obs]))
         cur_mapped_int = surface.map_rgb(cur_color)
         rgb_new[i] = cur_mapped_int
-
     # Reshape and roll axis until it fits imshow dimensions
     return np.rollaxis(rgb.reshape(3, height, width), axis=0, start=3)
+
 
 
 if(len(sys.argv) < 2):
@@ -61,6 +61,7 @@ game_surface = pygame.Surface((width, height), depth=8)
 
 # Initialize GameScreen object for framepooling
 game_screen = GameScreen()
+
 
 # init clock
 clock = pygame.time.Clock()
