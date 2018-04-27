@@ -7,6 +7,7 @@ import sys
 import pygame
 import numpy as np
 from numpy.ctypeslib import as_ctypes
+from dqn.game_screen import GameScreen
 
 # Converts the palette values to RGB values
 
@@ -32,10 +33,13 @@ def getRgbFromPalette(ale, surface, rgb_new):
         cur_color = pygame.Color(int(rgb[i]), int(rgb[i + n_obs]), int(rgb[i + 2 * n_obs]))
         cur_mapped_int = surface.map_rgb(cur_color)
         rgb_new[i] = cur_mapped_int
+    # Reshape and roll axis until it fits imshow dimensions
+    return np.rollaxis(rgb.reshape(3, height, width), axis=0, start=3)
+
 
 
 if(len(sys.argv) < 2):
-    print("Usage ./ale_python_test_pygame.py <ROM_FILE_NAME>")
+    print("Usage ./random_agent.py <ROM_FILE_NAME>")
     sys.exit()
 
 ale = ALEInterface(sys.argv[1].encode('utf-8'))
@@ -45,7 +49,7 @@ height = ale.ale_getScreenHeight()
 # Reset game
 ale.ale_resetGame()
 
-(display_width, display_height) = (320, 420)
+(display_width, display_height) = (width * 2, height * 2)
 
 # Initialize Pygame
 pygame.init()
@@ -54,6 +58,10 @@ pygame.display.set_caption("Arcade Learning Environment Random Agent Display")
 pygame.display.flip()
 
 game_surface = pygame.Surface((width, height), depth=8)
+
+# Initialize GameScreen object for framepooling
+game_screen = GameScreen()
+
 
 # init clock
 clock = pygame.time.Clock()
